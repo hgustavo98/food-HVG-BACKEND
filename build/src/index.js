@@ -15,11 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 5000;
 const prisma = new client_1.PrismaClient();
 app.use(express_1.default.json());
+app.use((0, cors_1.default)());
 app.get("/", (req, res) => {
     const { message } = req.body;
     if (!message)
