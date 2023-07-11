@@ -1,31 +1,17 @@
 version: "3.1"
 services:
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: always
-    ports:
-      - 8000:80
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: secret
-    depends_on:
-      - postgres
-
-  postgres:
-    image: postgres:14
+  
+  mysql:
+    image: mysql:8
     restart: always
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mysql-data:/var/lib/mysql
     ports:
-      - 5432:5432
+      - 3306:3306
     environment:
-      POSTGRES_DB: develop
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      PGDATA: /var/lib/postgresql/data
+      MYSQL_DATABASE: develop
+      MYSQL_ROOT_PASSWORD: secret  # Definir sua senha root desejada aqui
 
 volumes:
-  postgres-data:
-  pgadmin-data:
+  mysql-data:
+ 
