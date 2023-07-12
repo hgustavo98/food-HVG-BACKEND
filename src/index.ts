@@ -3,7 +3,7 @@ import dotenv from "dotenv"
 import express, { Express, Request, Response } from "express"
 import cors from "cors"
 import { CustomerData } from "./interfaces/CustomerData"
-import { PaymentData } from "./interfaces/PaymentData"
+
 import { SnackData } from "./interfaces/SnackData"
 
 dotenv.config()
@@ -57,12 +57,12 @@ interface CheckoutRequest extends Request {
   body: {
     cart: SnackData[]
     customer: CustomerData
-    payment: PaymentData
+    
   }
 }
 
 app.post("/checkout", async (req: CheckoutRequest, res: Response) => {
-  const { cart, customer, payment } = req.body
+  const { cart, customer } = req.body
 })
 
 app.listen(port, () => {
