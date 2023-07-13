@@ -30,6 +30,7 @@ model Customer {
   fullName     String   @db.VarChar(255)
   email        String   @unique @db.VarChar(255)
   mobile       String   @db.VarChar(255)
+  document     String   @db.VarChar(255)
   zipCode      String   @db.VarChar(255)
   street       String   @db.VarChar(255)
   number       String   @db.VarChar(255)
