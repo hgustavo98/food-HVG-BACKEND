@@ -1,17 +1,27 @@
 import { Customer, Order, OrderStatus } from "@prisma/client"
 
+import { PaymentData } from "../interfaces/PaymentData"
+
+import { api } from "../lib/api"
+
 export default class PaymentService {
   async process(
     order: Order,
-    customer: Customer
+    customer: Customer,
+    payment: PaymentData
   ): Promise<{ transactionId: string; status: OrderStatus }> {
     try {
-      const transactionId = this.generateTransactionId()
-      const status = OrderStatus.PAID
+      const customerId = await this.createCustomer(customer)
+      const transaction = await this.createTransaction(
+        customerId,
+        order,
+        customer,
+        payment
+      )
 
       return {
-        transactionId,
-        status,
+        transactionId: transaction.transactionId,
+        status: OrderStatus.PAID,
       }
     } catch (error) {
       console.error(
@@ -25,8 +35,70 @@ export default class PaymentService {
     }
   }
 
-  private generateTransactionId(): string {
-    const randomTransactionId = Math.floor(Math.random() * 1000000).toString()
-    return randomTransactionId
+  private async createCustomer(customer: Customer): Promise<string> {
+    const customerResponse = await api.get(`/customers?email=${customer.email}`)
+
+    if (customerResponse.data?.data?.length > 0) {
+      return customerResponse.data?.data[0]?.id
+    }
+
+    const customerParams = {
+      name: customer.fullName,
+      email: customer.email,
+      mobilePhone: customer.mobile,
+      cpfCnpj: customer.document,
+      postalCode: customer.zipCode,
+      address: customer.street,
+      addressNumber: customer.number,
+      complement: customer.complement,
+      province: customer.neighborhood,
+      notificationDisabled: true,
+    }
+
+    const response = await api.post("/customers", customerParams)
+
+    return response.data?.id
+  }
+
+  private async createTransaction(
+    customerId: string,
+    order: Order,
+    customer: Customer,
+    payment: PaymentData
+  ): Promise<{
+    transactionId: string
+    gatewayStatus: string
+  }> {
+    const paymentParams = {
+      customer: customerId,
+      billingType: "CREDIT_CARD",
+      dueDate: new Date().toISOString(),
+      value: order.total,
+      description: `Pedido #${order.id}`,
+      externalReference: order.id.toString(),
+      creditCard: {
+        holderName: payment.creditCardHolder,
+        number: payment.creditCardNumber,
+        expiryMonth: payment.creditCardExpiration?.split("/")[0],
+        expiryYear: payment.creditCardExpiration?.split("/")[1],
+        ccv: payment.creditCardSecurityCode,
+      },
+      creditCardHolderInfo: {
+        name: customer.fullName,
+        email: customer.email,
+        cpfCnpj: customer.document,
+        postalCode: customer.zipCode,
+        addressNumber: customer.number,
+        addressComplement: customer.complement,
+        mobilePhone: customer.mobile,
+      },
+    }
+
+    const response = await api.post("/payments", paymentParams)
+
+    return {
+      transactionId: response.data?.id,
+      gatewayStatus: response.data?.status,
+    }
   }
 }

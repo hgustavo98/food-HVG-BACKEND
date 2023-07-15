@@ -1,11 +1,14 @@
 import { Customer, Order, PrismaClient } from "@prisma/client"
+
 import { CustomerData } from "../interfaces/CustomerData"
+import { PaymentData } from "../interfaces/PaymentData"
 import { SnackData } from "../interfaces/SnackData"
 import PaymentService from "./PaymentService"
 
 export default class CheckoutService {
   private prisma: PrismaClient
 
+  // new CheckoutService()
   constructor() {
     this.prisma = new PrismaClient()
   }
@@ -13,7 +16,10 @@ export default class CheckoutService {
   async process(
     cart: SnackData[],
     customer: CustomerData,
+    payment: PaymentData
   ): Promise<{ id: number; transactionId: string; status: string }> {
+    // TODO: "puxar" os dados de snacks do BD
+    // in: [1,2,3,4]
     const snacks = await this.prisma.snack.findMany({
       where: {
         id: {
@@ -21,6 +27,7 @@ export default class CheckoutService {
         },
       },
     })
+    // console.log(`snacks`, snacks)
 
     const snacksInCart = snacks.map<SnackData>((snack) => ({
       ...snack,
@@ -30,21 +37,24 @@ export default class CheckoutService {
         cart.find((item) => item.id === snack.id)?.quantity! *
         Number(snack.price),
     }))
+    // console.log(`snacksInCart`, snacksInCart)
 
+    // TODO: registrar os dados do cliente no BD
     const customerCreated = await this.createCustomer(customer)
-    const orderCreated = await this.createOrder(snacksInCart, customerCreated)
+    // console.log(`customerCreated`, customerCreated)
 
-    const paymentService = new PaymentService()
+    // TODO: criar uma order orderitem
+    let orderCreated = await this.createOrder(snacksInCart, customerCreated)
+    // console.log(`orderCreated`, orderCreated)
 
-    const { transactionId, status } = await paymentService.process(
+    // TODO: processar o pagamento
+    const { transactionId, status } = await new PaymentService().process(
       orderCreated,
-      customerCreated
+      customerCreated,
+      payment
     )
 
-    orderCreated.transactionId = transactionId
-    orderCreated.status = status
-
-    await this.prisma.order.update({
+    orderCreated = await this.prisma.order.update({
       where: { id: orderCreated.id },
       data: {
         transactionId,

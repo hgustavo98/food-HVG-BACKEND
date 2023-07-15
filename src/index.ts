@@ -1,10 +1,13 @@
 import { PrismaClient } from "@prisma/client"
+import cors from "cors"
 import dotenv from "dotenv"
 import express, { Express, Request, Response } from "express"
-import cors from "cors"
-import { CustomerData } from "./interfaces/CustomerData"
 
+import { CustomerData } from "./interfaces/CustomerData"
+import { PaymentData } from "./interfaces/PaymentData"
 import { SnackData } from "./interfaces/SnackData"
+
+import CheckoutService from "./services/CheckoutService"
 
 dotenv.config()
 
@@ -14,6 +17,7 @@ const prisma = new PrismaClient()
 
 app.use(express.json())
 app.use(cors())
+
 app.get("/", (req: Request, res: Response) => {
   const { message } = req.body
 
@@ -46,6 +50,7 @@ app.get("/orders/:id", async (req: Request, res: Response) => {
     where: {
       id: +id,
     },
+    include: { customer: true, orderItems: { include: { snack: true } } },
   })
 
   if (!order) return res.status(404).send({ error: "Order not found" })
@@ -57,12 +62,20 @@ interface CheckoutRequest extends Request {
   body: {
     cart: SnackData[]
     customer: CustomerData
-    
+    payment: PaymentData
   }
 }
 
 app.post("/checkout", async (req: CheckoutRequest, res: Response) => {
-  const { cart, customer } = req.body
+  const { cart, customer, payment } = req.body
+
+  const orderCreated = await new CheckoutService().process(
+    cart,
+    customer,
+    payment
+  )
+
+  res.send(orderCreated)
 })
 
 app.listen(port, () => {
