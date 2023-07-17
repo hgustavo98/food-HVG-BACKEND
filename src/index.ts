@@ -43,6 +43,45 @@ app.get("/snacks", async (req: Request, res: Response) => {
   res.send(snacks)
 })
 
+app.get("/snacks/maior", async (req: Request, res: Response) => {
+  const { snack } = req.query
+
+  if (!snack) return res.status(400).send({ error: "Snack is required" })
+
+  // SELECT * FROM Snack WHERE snack = 'drink'
+  const snacks = await prisma.snack.findMany({
+    where: { 
+      snack: {
+        equals: snack as string,
+      },
+    },
+    orderBy: {price: 'desc'},
+  })
+
+  res.send(snacks)
+})
+
+app.get("/snacks/menor", async (req: Request, res: Response) => {
+  const { snack } = req.query
+
+  if (!snack) return res.status(400).send({ error: "Snack is required" })
+
+  // SELECT * FROM Snack WHERE snack = 'drink'
+  const snacks = await prisma.snack.findMany({
+    where: { 
+      snack: {
+        equals: snack as string,
+      },
+    },
+    orderBy: {price: 'asc'},
+  })
+
+  res.send(snacks)
+})
+
+
+
+
 app.get("/orders/:id", async (req: Request, res: Response) => {
   const { id } = req.params
 
