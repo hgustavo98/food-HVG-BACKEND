@@ -381,6 +381,74 @@ app.get("/customer-total-items/:customerId", async (req: Request, res: Response)
 
 ///////////////////////////////////////////
 
+
+
+
+
+////////////////Relatorios//////////////////
+
+
+// Relatório de Vendas Totais por Lanche
+app.get("/report-sales-by-snack", async (req: Request, res: Response) => {
+  try {
+    const salesBySnack = await prisma.orderItem.groupBy({
+      by: ["snackId"],
+      _sum: {
+        quantity: true,
+        subTotal: true,
+      },
+    });
+
+    res.send(salesBySnack);
+  } catch (error) {
+    console.error("Error fetching sales by snack:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+//Relatório de Pedidos Realizados por Cliente:
+app.get("/report-orders-by-customer", async (req: Request, res: Response) => {
+  try {
+    const ordersByCustomer = await prisma.customer.findMany({
+      select: {
+        id: true,
+        fullName: true,
+        orders: {
+          select: {
+            id: true,
+            total: true,
+          },
+        },
+      },
+    });
+
+    res.send(ordersByCustomer);
+  } catch (error) {
+    console.error("Error fetching orders by customer:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+//Relatório de Vendas Mensais:
+app.get("/report-monthly-sales", async (req: Request, res: Response) => {
+  try {
+    const monthlySales = await prisma.$queryRaw`
+      SELECT DATE_FORMAT(createdAt, "%Y-%m") AS month, SUM(total) AS totalSales
+      FROM \`Order\`
+      GROUP BY month
+      ORDER BY month;
+    `;
+
+    res.send(monthlySales);
+  } catch (error) {
+    console.error("Error fetching monthly sales:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+
+///////////////////////////////////////////////////////////////
+
 app.get("/orders/:id", async (req: Request, res: Response) => {
   const { id } = req.params
 
